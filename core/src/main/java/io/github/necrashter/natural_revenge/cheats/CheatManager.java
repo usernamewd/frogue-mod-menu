@@ -306,7 +306,8 @@ public class CheatManager {
                 }
                 if (espShowDistance) {
                     if (info.length() > 0) info.append(" | ");
-                    info.append(String.format("%.1fm", distance));
+                    // GWT-compatible float formatting
+                    info.append((int)distance).append(".").append((int)((distance - (int)distance) * 10)).append("m");
                 }
 
                 font.draw(spriteBatch, info.toString(), screenPos.x, screenPos.y);

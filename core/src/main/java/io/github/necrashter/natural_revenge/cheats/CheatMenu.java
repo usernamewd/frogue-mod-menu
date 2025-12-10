@@ -73,8 +73,14 @@ public class CheatMenu {
         style.imageUp = new TextureRegionDrawable(new TextureRegion(buttonTexture));
 
         floatingButton = new ImageButton(style);
-        floatingButton.setSize(60, 60);
-        floatingButton.setPosition(Gdx.graphics.getWidth() - 80, Gdx.graphics.getHeight() - 80);
+
+        // Scale button size for mobile devices
+        float buttonSize = Main.isMobile() ? 80 : 60;
+        float uiScale = Main.getUiScale();
+        buttonSize *= uiScale;
+
+        floatingButton.setSize(buttonSize, buttonSize);
+        updateButtonPosition();
 
         floatingButton.addListener(new ClickListener() {
             @Override
@@ -83,6 +89,8 @@ public class CheatMenu {
             }
         });
 
+        // Make sure the button is on top
+        floatingButton.setZIndex(Integer.MAX_VALUE);
         stage.addActor(floatingButton);
     }
 
@@ -282,17 +290,17 @@ public class CheatMenu {
         contentTable.add(descLabel).expandX().left().padLeft(30).padBottom(5).row();
     }
 
-    private void addSlider(String name, float min, float max, float currentValue, java.util.function.Consumer<Float> onChange) {
+    private void addSlider(String name, float min, float max, float currentValue, SliderCallback onChange) {
         Table row = new Table();
 
         Label nameLabel = new Label(name + ": ", skin);
-        Label valueLabel = new Label(String.format("%.1f", currentValue), skin);
+        Label valueLabel = new Label(formatFloat(currentValue), skin);
 
         Slider slider = new Slider(min, max, (max - min) / 100f, false, skin);
         slider.setValue(currentValue);
         slider.addListener(event -> {
             float val = slider.getValue();
-            valueLabel.setText(String.format("%.1f", val));
+            valueLabel.setText(formatFloat(val));
             onChange.accept(val);
             return false;
         });
@@ -302,6 +310,18 @@ public class CheatMenu {
         row.add(valueLabel).width(40);
 
         contentTable.add(row).expandX().fillX().pad(3).row();
+    }
+
+    // GWT-compatible callback interface (replaces java.util.function.Consumer)
+    private interface SliderCallback {
+        void accept(float value);
+    }
+
+    // GWT-compatible float formatting
+    private String formatFloat(float value) {
+        int intPart = (int) value;
+        int decimalPart = Math.abs((int) ((value - intPart) * 10));
+        return intPart + "." + decimalPart;
     }
 
     private void addButton(String name, Runnable onClick) {
@@ -331,7 +351,25 @@ public class CheatMenu {
     }
 
     public void updateButtonPosition() {
-        floatingButton.setPosition(Gdx.graphics.getWidth() - 80, Gdx.graphics.getHeight() - 80);
+        if (floatingButton == null) return;
+
+        // Use viewport dimensions for proper positioning
+        float viewportWidth = stage.getViewport().getWorldWidth();
+        float viewportHeight = stage.getViewport().getWorldHeight();
+
+        float buttonWidth = floatingButton.getWidth();
+        float buttonHeight = floatingButton.getHeight();
+
+        // Position in top-left corner for mobile (away from other controls)
+        // Position in top-right for desktop
+        float padding = 20;
+        if (Main.isMobile()) {
+            // Top-left for mobile to avoid conflict with other buttons
+            floatingButton.setPosition(padding, viewportHeight - buttonHeight - padding);
+        } else {
+            // Top-right for desktop
+            floatingButton.setPosition(viewportWidth - buttonWidth - padding, viewportHeight - buttonHeight - padding);
+        }
     }
 
     public void dispose() {

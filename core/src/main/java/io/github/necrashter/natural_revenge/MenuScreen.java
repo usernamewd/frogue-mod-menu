@@ -16,6 +16,7 @@ import io.github.necrashter.natural_revenge.world.GameWorld;
 import io.github.necrashter.natural_revenge.world.GameWorldRenderer;
 import io.github.necrashter.natural_revenge.world.LowResWorldRenderer;
 import io.github.necrashter.natural_revenge.world.levels.LevelMenuBg;
+import io.github.necrashter.natural_revenge.cheats.CheatMenu;
 
 public class MenuScreen implements Screen {
     final Main game;
@@ -23,6 +24,9 @@ public class MenuScreen implements Screen {
 
     private final GameWorld world;
     private final GameWorldRenderer worldRenderer;
+
+    // Cheat menu
+    private CheatMenu cheatMenu;
 
     public MenuScreen(final Main game) {
         this.game = game;
@@ -84,6 +88,9 @@ public class MenuScreen implements Screen {
         // Background world
         world = new LevelMenuBg(game);
         worldRenderer = new LowResWorldRenderer(world);
+
+        // Initialize cheat menu
+        cheatMenu = new CheatMenu(stage);
     }
 
     public void startLevel(int level) {
@@ -138,6 +145,9 @@ public class MenuScreen implements Screen {
     public void resize(int width, int height) {
         worldRenderer.screenResize(width, height);
         stage.getViewport().update(width, height, true);
+        if (cheatMenu != null) {
+            cheatMenu.updateButtonPosition();
+        }
     }
 
     @Override
@@ -160,5 +170,8 @@ public class MenuScreen implements Screen {
         // World renderer is supposed to dispose world as well.
         worldRenderer.dispose();
         stage.dispose();
+        if (cheatMenu != null) {
+            cheatMenu.dispose();
+        }
     }
 }
