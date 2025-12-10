@@ -132,7 +132,9 @@ public class Firearm extends PlayerWeapon {
                 ammoInClip = maxAmmoInClip;
             }
         } else if (state == State.Firing) {
-            progress += delta * recoverySpeed;
+            // Cheat: Rapidfire - faster fire rate
+            float actualRecoverySpeed = cheats.rapidFire ? recoverySpeed * cheats.rapidFireMultiplier : recoverySpeed;
+            progress += delta * actualRecoverySpeed;
             decal.setColor(1.0f, 1.0f, 1.0f, 1.0f - progress);
             if (noSoundYet && progress > 0.5f) {
                 noSoundYet = false;

@@ -44,6 +44,8 @@ public class CheatManager {
     public boolean autoShoot = false;   // Auto fire when aiming at enemy
     public boolean noRecoil = false;    // No camera kickback
     public boolean recoilControl = false; // Auto compensate recoil
+    public boolean rapidFire = false;    // Faster fire rate
+    public float rapidFireMultiplier = 3f; // How much faster
     public float aimbotFOV = 90f;
     public float aimbotSmoothing = 5f;
     public boolean aimbotVisibleOnly = true;
@@ -216,8 +218,8 @@ public class CheatManager {
                 float targetPitch = (float) Math.toDegrees(Math.asin(MathUtils.clamp(toTarget.y, -1f, 1f)));
                 world.player.pitch = MathUtils.clamp(targetPitch, -90f, 90f);
 
-                // Auto shoot when instant aim is locked
-                if (autoShoot) {
+                // Auto shoot when instant aim is locked (only if player has a valid weapon)
+                if (autoShoot && canPlayerShoot(world)) {
                     world.player.firing1 = true;
                 }
             } else if (aimbot) {
@@ -234,8 +236,8 @@ public class CheatManager {
                 float targetPitch = (float) Math.toDegrees(Math.asin(MathUtils.clamp(toTarget.y, -1f, 1f)));
                 world.player.pitch = MathUtils.lerp(world.player.pitch, MathUtils.clamp(targetPitch, -90f, 90f), lerpFactor);
 
-                // Auto shoot when on target
-                if (autoShoot && closestAngle < 5f) {
+                // Auto shoot when on target (only if player has a valid weapon)
+                if (autoShoot && closestAngle < 5f && canPlayerShoot(world)) {
                     world.player.firing1 = true;
                 }
             }
@@ -250,6 +252,16 @@ public class CheatManager {
             world.player.pitch = Math.max(-90f, world.player.pitch - compensation);
             recoilCompensation -= compensation;
         }
+    }
+
+    // Check if player has a valid weapon that can shoot
+    private boolean canPlayerShoot(GameWorld world) {
+        if (world == null || world.player == null) return false;
+        // Check if player has an active weapon
+        if (world.player.activeWeapon == null) return false;
+        // Only allow shooting with Firearm weapons
+        if (!(world.player.activeWeapon instanceof io.github.necrashter.natural_revenge.world.player.Firearm)) return false;
+        return true;
     }
 
     // Called when weapon fires to track recoil for compensation
@@ -523,5 +535,7 @@ public class CheatManager {
         gravityGun = false;
         freezeRay = false;
         confettiKills = false;
+        rapidFire = false;
+        rapidFireMultiplier = 3f;
     }
 }

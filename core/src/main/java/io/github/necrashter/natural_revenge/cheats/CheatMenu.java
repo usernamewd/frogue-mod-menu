@@ -267,6 +267,8 @@ public class CheatMenu {
 
         addToggle("No Recoil", "No camera kickback when shooting", cheats.noRecoil, () -> cheats.noRecoil = !cheats.noRecoil);
         addToggle("Recoil Control", "Auto-compensate recoil", cheats.recoilControl, () -> cheats.recoilControl = !cheats.recoilControl);
+        addToggle("Rapid Fire", "Shoot much faster", cheats.rapidFire, () -> cheats.rapidFire = !cheats.rapidFire);
+        addSlider("Rapidfire Multiplier", 1.5f, 10f, cheats.rapidFireMultiplier, (val) -> cheats.rapidFireMultiplier = val);
     }
 
     private void addToggle(String name, String description, boolean currentValue, Runnable onToggle) {
