@@ -254,12 +254,19 @@ public class CheatMenu {
 
         contentTable.add(new Label("=== AIMBOT ===", skin)).colspan(2).pad(5).row();
 
-        addToggle("Aimbot", "Auto-aim at enemies", cheats.aimbot, () -> cheats.toggleAimbot());
+        addToggle("Aimbot", "Auto-aim at enemies (smooth)", cheats.aimbot, () -> cheats.toggleAimbot());
         addToggle("Silent Aimbot", "Hit enemies without moving camera", cheats.silentAimbot, () -> cheats.toggleSilentAimbot());
+        addToggle("Instant Aim", "Snap to enemy head instantly", cheats.instantAim, () -> { cheats.instantAim = !cheats.instantAim; if (cheats.instantAim) { cheats.aimbot = false; cheats.silentAimbot = false; } });
+        addToggle("Auto Shoot", "Fire automatically when aiming", cheats.autoShoot, () -> cheats.autoShoot = !cheats.autoShoot);
         addToggle("Visible Only", "Only aim at visible enemies", cheats.aimbotVisibleOnly, () -> cheats.aimbotVisibleOnly = !cheats.aimbotVisibleOnly);
 
         addSlider("Aimbot FOV", 10f, 180f, cheats.aimbotFOV, (val) -> cheats.aimbotFOV = val);
         addSlider("Aim Smoothing", 1f, 20f, cheats.aimbotSmoothing, (val) -> cheats.aimbotSmoothing = val);
+
+        contentTable.add(new Label("=== RECOIL ===", skin)).colspan(2).pad(5).row();
+
+        addToggle("No Recoil", "No camera kickback when shooting", cheats.noRecoil, () -> cheats.noRecoil = !cheats.noRecoil);
+        addToggle("Recoil Control", "Auto-compensate recoil", cheats.recoilControl, () -> cheats.recoilControl = !cheats.recoilControl);
     }
 
     private void addToggle(String name, String description, boolean currentValue, Runnable onToggle) {

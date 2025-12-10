@@ -274,7 +274,15 @@ public class Firearm extends PlayerWeapon {
             player.camera.direction.x * horizontalLength,
             player.camera.direction.y * horizontalLength,
             player.camera.direction.z * horizontalLength);
-        player.pitchMod += knockback;
+
+        // Cheat: No recoil - skip camera kick
+        if (!cheats.noRecoil) {
+            player.pitchMod += knockback;
+
+            // Track recoil for recoil control compensation
+            cheats.onWeaponFire(knockback * 5f);
+        }
+
         player.world.statistics.update(this);
     }
 

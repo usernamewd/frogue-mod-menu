@@ -40,9 +40,14 @@ public class CheatManager {
     public boolean espLines = true;
     public boolean aimbot = false;
     public boolean silentAimbot = false;
+    public boolean instantAim = false;  // Snap to enemy head instantly
+    public boolean autoShoot = false;   // Auto fire when aiming at enemy
+    public boolean noRecoil = false;    // No camera kickback
+    public boolean recoilControl = false; // Auto compensate recoil
     public float aimbotFOV = 90f;
     public float aimbotSmoothing = 5f;
     public boolean aimbotVisibleOnly = true;
+    public float recoilCompensation = 0f; // Accumulated recoil to compensate
 
     // Visual cheats
     public boolean extendedView = false;
@@ -140,7 +145,7 @@ public class CheatManager {
         }
 
         // Aimbot logic
-        if (aimbot || silentAimbot) {
+        if (aimbot || silentAimbot || instantAim) {
             updateAimbot(world);
         }
 
@@ -160,11 +165,12 @@ public class CheatManager {
         if (world.player == null || world.octree == null) return;
 
         GameEntity closestEnemy = null;
-        float closestAngle = aimbotFOV;
+        float closestAngle = instantAim ? 360f : aimbotFOV; // Instant aim has no FOV limit
+        float closestDistance = Float.MAX_VALUE;
         Vector3 playerPos = world.player.hitBox.position;
         Vector3 playerDir = world.cam.direction;
 
-        // Find closest enemy within FOV
+        // Find closest enemy within FOV (or closest overall for instant aim)
         Array<GameEntity> entities = world.octree.getAllEntities();
         for (GameEntity entity : entities) {
             if (entity == world.player || entity.dead) continue;
@@ -175,9 +181,15 @@ public class CheatManager {
             if (distance > world.viewDistance) continue;
 
             toEnemy.nor();
-            float angle = (float) Math.toDegrees(Math.acos(playerDir.dot(toEnemy)));
+            float angle = (float) Math.toDegrees(Math.acos(MathUtils.clamp(playerDir.dot(toEnemy), -1f, 1f)));
 
-            if (angle < closestAngle) {
+            // For instant aim, prioritize closest distance; for regular aimbot, prioritize angle
+            if (instantAim) {
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestEnemy = entity;
+                }
+            } else if (angle < closestAngle) {
                 closestAngle = angle;
                 closestEnemy = entity;
             }
@@ -187,11 +199,27 @@ public class CheatManager {
 
         if (closestEnemy != null) {
             Vector3 targetPos = new Vector3(closestEnemy.hitBox.position);
-            targetPos.y += closestEnemy.hitBox.height * 0.7f; // Aim at upper body
+            // Aim at head (top of hitbox)
+            targetPos.y += closestEnemy.hitBox.height * 0.9f;
 
             if (silentAimbot) {
                 // Silent aimbot - modify bullet direction without moving camera
                 silentAimDirection.set(targetPos).sub(playerPos).nor();
+            } else if (instantAim) {
+                // Instant aim - snap immediately to enemy head
+                Vector3 toTarget = new Vector3(targetPos).sub(world.cam.position).nor();
+
+                // Instant snap - no smoothing
+                Vector3 horizontalDir = new Vector3(toTarget.x, 0, toTarget.z).nor();
+                world.player.forward.set(horizontalDir);
+
+                float targetPitch = (float) Math.toDegrees(Math.asin(MathUtils.clamp(toTarget.y, -1f, 1f)));
+                world.player.pitch = MathUtils.clamp(targetPitch, -90f, 90f);
+
+                // Auto shoot when instant aim is locked
+                if (autoShoot) {
+                    world.player.firing1 = true;
+                }
             } else if (aimbot) {
                 // Regular aimbot - smoothly move camera to target
                 Vector3 toTarget = new Vector3(targetPos).sub(world.cam.position).nor();
@@ -205,7 +233,29 @@ public class CheatManager {
                 // Update player pitch (vertical angle)
                 float targetPitch = (float) Math.toDegrees(Math.asin(MathUtils.clamp(toTarget.y, -1f, 1f)));
                 world.player.pitch = MathUtils.lerp(world.player.pitch, MathUtils.clamp(targetPitch, -90f, 90f), lerpFactor);
+
+                // Auto shoot when on target
+                if (autoShoot && closestAngle < 5f) {
+                    world.player.firing1 = true;
+                }
             }
+        } else if (autoShoot) {
+            // No target - stop auto shooting
+            world.player.firing1 = false;
+        }
+
+        // Recoil control - gradually bring camera back down
+        if (recoilControl && recoilCompensation > 0) {
+            float compensation = Math.min(recoilCompensation, Gdx.graphics.getDeltaTime() * 50f);
+            world.player.pitch = Math.max(-90f, world.player.pitch - compensation);
+            recoilCompensation -= compensation;
+        }
+    }
+
+    // Called when weapon fires to track recoil for compensation
+    public void onWeaponFire(float recoilAmount) {
+        if (recoilControl) {
+            recoilCompensation += recoilAmount;
         }
     }
 
@@ -452,6 +502,11 @@ public class CheatManager {
         enemyESP = false;
         aimbot = false;
         silentAimbot = false;
+        instantAim = false;
+        autoShoot = false;
+        noRecoil = false;
+        recoilControl = false;
+        recoilCompensation = 0f;
         extendedView = false;
         rainbowWorld = false;
         spiralWeapon = false;
@@ -462,5 +517,11 @@ public class CheatManager {
         moonGravity = false;
         earthquakeMode = false;
         drunkMode = false;
+        explosiveShots = false;
+        laserBeam = false;
+        bounceShots = false;
+        gravityGun = false;
+        freezeRay = false;
+        confettiKills = false;
     }
 }
