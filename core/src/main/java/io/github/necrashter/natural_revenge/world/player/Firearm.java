@@ -195,7 +195,38 @@ public class Firearm extends PlayerWeapon {
                 player.castShootRay(spread);
             }
 
+            // Regular bullet trace
             player.world.decalPool.addBulletTrace(decal.getPosition(), player.getShootTargetPoint());
+
+            // Cheat: Laser beam - add multiple traces for laser effect
+            if (cheats.laserBeam) {
+                cheats.addLaserBeam(player.world, decal.getPosition(), player.getShootTargetPoint());
+            }
+
+            // Cheat: Bounce shots - bounce off surfaces and continue
+            if (cheats.bounceShots && player.shootIntersection.t < player.world.viewDistance) {
+                Vector3 hitPoint = player.getShootTargetPoint();
+                Vector3 normal = new Vector3(0, 1, 0); // Default up normal for terrain
+                if (player.shootIntersection.object != null) {
+                    // Use a simple reflection
+                    normal.set(player.shootRay.direction).scl(-1).nor();
+                    normal.y = Math.abs(normal.y) + 0.5f;
+                    normal.nor();
+                }
+                // Reflect direction
+                Vector3 reflected = new Vector3(player.shootRay.direction);
+                reflected.sub(normal.scl(2 * reflected.dot(normal)));
+                // Cast bounced ray
+                Vector3 bounceEnd = new Vector3(hitPoint).mulAdd(reflected, 20f);
+                player.world.decalPool.addBulletTrace(hitPoint, bounceEnd);
+
+                // Check for enemy hit on bounce
+                com.badlogic.gdx.math.collision.Ray bounceRay = new com.badlogic.gdx.math.collision.Ray(hitPoint, reflected);
+                io.github.necrashter.natural_revenge.world.geom.RayIntersection bounceHit = player.world.intersectRay(bounceRay, player);
+                if (bounceHit.entity != null && bounceHit.entity != player) {
+                    bounceHit.entity.takeDamage(actualDamage * 0.5f, Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
+                }
+            }
             if (player.shootIntersection.object != null) {
                 if (player.shootIntersection.object instanceof Damageable) {
                     Damageable damageable = (Damageable) player.shootIntersection.object;

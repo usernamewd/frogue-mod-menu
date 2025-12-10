@@ -359,6 +359,86 @@ public class CheatManager {
     public void toggleRainbowWorld() { rainbowWorld = !rainbowWorld; }
     public void toggleSpiralWeapon() { spiralWeapon = !spiralWeapon; }
 
+    // Spawn commands - need GameWorld reference
+    private GameWorld lastWorld = null;
+
+    public void setWorld(GameWorld world) {
+        this.lastWorld = world;
+    }
+
+    public void spawnHealthPack() {
+        if (lastWorld == null || lastWorld.player == null) return;
+        Vector3 pos = new Vector3(lastWorld.player.hitBox.position);
+        pos.x += MathUtils.random(-3f, 3f);
+        pos.z += MathUtils.random(-3f, 3f);
+        pos.y = lastWorld.terrain.getHeight(pos.x, pos.z);
+        lastWorld.octree.add(Main.assets.createHealthPickup(pos).spawnAnimation());
+    }
+
+    public void spawnRandomWeapon() {
+        if (lastWorld == null || lastWorld.player == null) return;
+        Vector3 pos = new Vector3(lastWorld.player.hitBox.position);
+        pos.x += MathUtils.random(-3f, 3f);
+        pos.z += MathUtils.random(-3f, 3f);
+        pos.y = lastWorld.terrain.getHeight(pos.x, pos.z);
+        lastWorld.octree.add(io.github.necrashter.natural_revenge.world.objects.RandomGunPickup.generate(pos).spawnAnimation());
+    }
+
+    public void killAllEnemies() {
+        if (lastWorld == null || lastWorld.octree == null) return;
+        Array<GameEntity> entities = lastWorld.octree.getAllEntities();
+        for (GameEntity entity : entities) {
+            if (entity != lastWorld.player && !entity.dead) {
+                entity.takeDamage(99999f, io.github.necrashter.natural_revenge.world.Damageable.DamageAgent.Player,
+                    io.github.necrashter.natural_revenge.world.Damageable.DamageSource.Firearm);
+            }
+        }
+    }
+
+    public void teleportForward() {
+        if (lastWorld == null || lastWorld.player == null) return;
+        Vector3 dir = new Vector3(lastWorld.cam.direction).scl(10f);
+        lastWorld.player.hitBox.position.add(dir);
+    }
+
+    public void healPlayer() {
+        if (lastWorld == null || lastWorld.player == null) return;
+        lastWorld.player.health = lastWorld.player.maxHealth;
+    }
+
+    public void completeLevel() {
+        if (lastWorld == null || lastWorld.screen == null) return;
+        lastWorld.screen.gameOver(true);
+    }
+
+    // Laser beam rendering helper
+    public void addLaserBeam(GameWorld world, Vector3 start, Vector3 end) {
+        if (!laserBeam || world == null) return;
+        // Add multiple traces for laser effect
+        for (int i = 0; i < 5; i++) {
+            Vector3 offset = new Vector3(
+                MathUtils.random(-0.02f, 0.02f),
+                MathUtils.random(-0.02f, 0.02f),
+                MathUtils.random(-0.02f, 0.02f)
+            );
+            world.decalPool.addBulletTrace(new Vector3(start).add(offset), new Vector3(end).add(offset));
+        }
+    }
+
+    // Confetti effect on kill
+    public void addConfettiEffect(GameWorld world, Vector3 position) {
+        if (!confettiKills || world == null) return;
+        // Add multiple bullet traces as confetti particles
+        for (int i = 0; i < 20; i++) {
+            Vector3 dir = new Vector3(
+                MathUtils.random(-1f, 1f),
+                MathUtils.random(0.5f, 2f),
+                MathUtils.random(-1f, 1f)
+            ).nor().scl(MathUtils.random(1f, 3f));
+            world.decalPool.addBulletTrace(position, new Vector3(position).add(dir));
+        }
+    }
+
     public void resetAll() {
         godMode = false;
         infiniteAmmo = false;

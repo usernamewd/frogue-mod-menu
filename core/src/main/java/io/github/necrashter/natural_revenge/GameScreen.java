@@ -328,6 +328,7 @@ public class GameScreen implements Screen {
 
         // Initialize cheat system
         cheatManager = CheatManager.getInstance();
+        cheatManager.setWorld(world);
         cheatMenu = new CheatMenu(stage);
         cheatEffects = CheatEffects.getInstance();
 

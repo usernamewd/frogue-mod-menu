@@ -128,6 +128,9 @@ public class NPC extends GameEntity implements Pool.Poolable {
     @Override
     public void die() {
         super.die();
+
+        // Cheat: Confetti kills effect
+        CheatManager.getInstance().addConfettiEffect(world, hitBox.position);
         animationController.setAnimation(deathAnim, animationListener);
     }
 

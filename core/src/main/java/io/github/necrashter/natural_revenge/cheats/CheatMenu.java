@@ -232,12 +232,12 @@ public class CheatMenu {
         // Spawn buttons
         contentTable.add(new Label("--- SPAWN COMMANDS ---", skin)).colspan(2).pad(10).row();
 
-        addButton("Spawn Health Pack", () -> { /* Spawn health */ });
-        addButton("Spawn Random Weapon", () -> { /* Spawn weapon */ });
-        addButton("Kill All Enemies", () -> { /* Kill all */ });
-        addButton("Complete Level", () -> { /* Win */ });
-        addButton("Spawn 10 Zombies", () -> { /* Spawn zombies */ });
-        addButton("Spawn Boss", () -> { /* Spawn boss */ });
+        addButton("Spawn Health Pack", () -> cheats.spawnHealthPack());
+        addButton("Spawn Random Weapon", () -> cheats.spawnRandomWeapon());
+        addButton("Kill All Enemies", () -> cheats.killAllEnemies());
+        addButton("Heal Player", () -> cheats.healPlayer());
+        addButton("Teleport Forward", () -> cheats.teleportForward());
+        addButton("Complete Level (Win)", () -> cheats.completeLevel());
     }
 
     private void addESPAimbotCheats() {
