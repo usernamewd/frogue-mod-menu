@@ -19,6 +19,7 @@ import io.github.necrashter.natural_revenge.world.GameWorld;
 import io.github.necrashter.natural_revenge.Main;
 import io.github.necrashter.natural_revenge.world.geom.RayIntersection;
 import io.github.necrashter.natural_revenge.world.objects.RandomGunPickup;
+import io.github.necrashter.natural_revenge.cheats.CheatManager;
 
 public class Player extends GameEntity {
 
@@ -273,6 +274,23 @@ public class Player extends GameEntity {
 
         camera.position.set(hitBox.position);
         camera.position.add(0, CAMERA_HEIGHT, 0);
+
+        // Cheat: Camera effects
+        CheatManager cheats = CheatManager.getInstance();
+        if (cheats.earthquakeMode) {
+            // Earthquake camera shake
+            float shakeIntensity = 0.15f;
+            camera.position.add(
+                MathUtils.sin(cheats.globalTimer * 25f) * shakeIntensity,
+                MathUtils.cos(cheats.globalTimer * 30f) * shakeIntensity * 0.5f,
+                MathUtils.sin(cheats.globalTimer * 20f) * shakeIntensity * 0.3f
+            );
+        }
+        if (cheats.drunkMode) {
+            // Drunk mode camera roll
+            float wobble = MathUtils.sin(cheats.globalTimer * 2f) * 5f;
+            camera.rotate(Vector3.Z, wobble * delta * 10f);
+        }
 
         camera.update();
 

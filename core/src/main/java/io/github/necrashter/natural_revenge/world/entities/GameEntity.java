@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import io.github.necrashter.natural_revenge.Main;
+import io.github.necrashter.natural_revenge.cheats.CheatManager;
 import io.github.necrashter.natural_revenge.world.Damageable;
 import io.github.necrashter.natural_revenge.world.GameObject;
 import io.github.necrashter.natural_revenge.world.GameWorld;
@@ -68,13 +69,30 @@ public class GameEntity implements Damageable, Spatial {
     }
 
     public void update(float delta) {
+        CheatManager cheats = CheatManager.getInstance();
+
         hitBox.position.mulAdd(movement, delta);
 
         if (hitBox.onObject || hitBox.onGround)
             hitBox.velocity.scl(.9f, 1, .9f);
+
+        // Apply moon gravity compensation for player only
+        // Normal gravity is applied in hitBox.update(), we counteract some of it here
+        if (cheats.moonGravity && this instanceof io.github.necrashter.natural_revenge.world.player.Player) {
+            // Counteract 80% of gravity (making it feel like moon gravity)
+            hitBox.velocity.y += delta * CharHitBox.GRAVITY * 0.8f;
+        }
+
         hitBox.update(delta);
 
-        staticCollisions();
+        // No clip mode - skip collisions for player
+        if (cheats.noClip && this instanceof io.github.necrashter.natural_revenge.world.player.Player) {
+            // In no clip mode, allow free movement without collision
+            hitBox.onGround = true; // Fake being on ground to allow jumping
+            // Don't clamp to terrain, don't do collision checks
+        } else {
+            staticCollisions();
+        }
 
         octreeNode.updateEntity(this);
     }

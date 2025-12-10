@@ -13,6 +13,7 @@ import io.github.necrashter.natural_revenge.Main;
 import io.github.necrashter.natural_revenge.world.Damageable;
 import io.github.necrashter.natural_revenge.world.GameWorld;
 import io.github.necrashter.natural_revenge.world.geom.Shape;
+import io.github.necrashter.natural_revenge.cheats.CheatManager;
 
 public class Firearm extends PlayerWeapon {
     public String name = "Firearm";
@@ -99,6 +100,14 @@ public class Firearm extends PlayerWeapon {
     public float spread = 0.02f;
     @Override
     public void update(float delta) {
+        CheatManager cheats = CheatManager.getInstance();
+
+        // Cheat: Infinite ammo - keep ammo full
+        if (cheats.infiniteAmmo) {
+            ammoInClip = maxAmmoInClip;
+            clips = Integer.MAX_VALUE;
+        }
+
         if (state == State.Ready) {
             if (player.firing1) {
                 shoot();
@@ -113,7 +122,9 @@ public class Firearm extends PlayerWeapon {
                 state = State.Ready;
             }
         } else if (state == State.Reloading) {
-            progress += delta * reloadSpeed;
+            // Cheat: No reload - instant reload
+            float actualReloadSpeed = cheats.noReload ? 100f : reloadSpeed;
+            progress += delta * actualReloadSpeed;
             if (progress > 1.0f) {
                 progress = 0.0f;
                 state = State.Ready;
@@ -127,7 +138,10 @@ public class Firearm extends PlayerWeapon {
             }
             if (progress > 1.0f) {
                 noSoundYet = true;
-                if (--ammoInClip > 0) {
+                // Cheat: Infinite ammo - don't decrease ammo
+                int newAmmo = cheats.infiniteAmmo ? ammoInClip : (ammoInClip - 1);
+                if (newAmmo > 0) {
+                    ammoInClip = newAmmo;
                     progress = 0.0f;
                     if (isAuto) {
                         state = State.Ready;
@@ -139,6 +153,7 @@ public class Firearm extends PlayerWeapon {
                         noAutoTimer = noAutoWaitTime;
                     }
                 } else {
+                    ammoInClip = 0;
                     beginReload();
                 }
                 nextRoll = 0;
@@ -153,22 +168,42 @@ public class Firearm extends PlayerWeapon {
     }
 
     private void shoot() {
+        CheatManager cheats = CheatManager.getInstance();
         playShootSound();
         state = State.Firing;
         decalRotation = MathUtils.random(0, MathUtils.PI2);
         nextRoll = MathUtils.random(-recoveryRoll, recoveryRoll);
+
+        // Cheat: One hit kill - massive damage
+        float actualDamage = cheats.oneHitKill ? 99999f : damage;
+
         for (int i = 0; i < bulletsPerShot; ++i) {
-            player.castShootRay(spread);
+            // Cheat: Silent aimbot - use aimbot direction instead of camera
+            if (cheats.silentAimbot && cheats.aimbotTarget != null) {
+                // Cast ray towards the aimbot target
+                Vector3 targetPos = new Vector3(cheats.aimbotTarget.hitBox.position);
+                targetPos.y += cheats.aimbotTarget.hitBox.height * 0.7f;
+                player.shootRay = player.getAim();
+                player.shootRay.direction.set(targetPos).sub(player.shootRay.origin).nor();
+                // Add slight spread
+                player.shootRay.direction.add(MathUtils.random(-spread * 0.5f, spread * 0.5f),
+                                               MathUtils.random(-spread * 0.5f, spread * 0.5f),
+                                               MathUtils.random(-spread * 0.5f, spread * 0.5f)).nor();
+                player.shootIntersection.set(player.world.intersectRay(player.shootRay, player));
+            } else {
+                player.castShootRay(spread);
+            }
+
             player.world.decalPool.addBulletTrace(decal.getPosition(), player.getShootTargetPoint());
             if (player.shootIntersection.object != null) {
                 if (player.shootIntersection.object instanceof Damageable) {
                     Damageable damageable = (Damageable) player.shootIntersection.object;
-                    damageable.takeDamage(damage, Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
+                    damageable.takeDamage(actualDamage, Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
                 }
             } else if (player.shootIntersection.entity != null) {
-                player.shootIntersection.entity.takeDamage(damage, Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
+                player.shootIntersection.entity.takeDamage(actualDamage, Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
                 totalBulletsHit++;
-                totalDamage += damage;
+                totalDamage += actualDamage;
             }
         }
         totalBulletsShot += bulletsPerShot;
@@ -215,6 +250,8 @@ public class Firearm extends PlayerWeapon {
 
     public void setView(Camera camera) {
         if (viewModel != null) {
+            CheatManager cheats = CheatManager.getInstance();
+
             final float o = 0.75f;
             final float ratio = Interpolation.pow2.apply(aimSightRatio);
             final float tx = MathUtils.lerp(o, 0f, ratio);
@@ -249,6 +286,18 @@ public class Firearm extends PlayerWeapon {
                         .rotate(Vector3.X, (MathUtils.cos(progress * MathUtils.PI)*.5f-.5f) * 360)
                 ;
             }
+
+            // Cheat: Spiral weapon - continuously rotate weapon
+            if (cheats.spiralWeapon) {
+                viewModel.transform.rotate(Vector3.Z, cheats.spiralAngle);
+                viewModel.transform.rotate(Vector3.Y, cheats.spiralAngle * 0.7f);
+            }
+
+            // Cheat: Giant player - scale up weapon
+            if (cheats.giantPlayer) {
+                viewModel.transform.scale(1.5f, 1.5f, 1.5f);
+            }
+
             viewModel.transform.scale(scaleX, scaleY, scaleZ);
         }
     }

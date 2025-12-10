@@ -17,6 +17,7 @@ import io.github.necrashter.natural_revenge.world.Spatial;
 import io.github.necrashter.natural_revenge.world.decals.DecayingDecal;
 import io.github.necrashter.natural_revenge.world.geom.RayIntersection;
 import io.github.necrashter.natural_revenge.world.objects.RandomGunPickup;
+import io.github.necrashter.natural_revenge.cheats.CheatManager;
 
 public class NPC extends GameEntity implements Pool.Poolable {
     private static final Vector3 temp = new Vector3();
@@ -57,8 +58,27 @@ public class NPC extends GameEntity implements Pool.Poolable {
     @Override
     public void render(GameWorld world) {
         if (isInViewDistance(world.cam, world.viewDistance) && isVisible(world.cam)) {
+            CheatManager cheats = CheatManager.getInstance();
+
+            // Cheat: Apply scale effects before rendering
+            boolean needsScaleReset = false;
+            if (cheats.tinyEnemies) {
+                modelInstance.transform.scale(0.5f, 0.5f, 0.5f);
+                needsScaleReset = true;
+            }
+            if (cheats.bigHead) {
+                // Apply a Y-scale bias to make them look top-heavy (big head effect)
+                modelInstance.transform.scale(1f, 1.3f, 1f);
+                needsScaleReset = true;
+            }
+
             world.modelBatch.render(modelInstance, world.environment);
             world.visibleCount++;
+
+            // Reset scale after rendering
+            if (needsScaleReset) {
+                updateTransform();
+            }
         }
         if (!decal.decayed) {
             world.decalBatch.add(decal);
@@ -229,6 +249,22 @@ public class NPC extends GameEntity implements Pool.Poolable {
     State currentState = null;
 
     void stateUpdate(float delta) {
+        CheatManager cheats = CheatManager.getInstance();
+
+        // Cheat: Freeze enemies - stop all movement and AI
+        if (cheats.freezeEnemies) {
+            movement.setZero();
+            hitBox.velocity.setZero();
+            return;
+        }
+
+        // Cheat: Invisibility - enemies lose track of player
+        if (cheats.invisibility) {
+            movement.setZero();
+            // Just idle, don't pursue player
+            return;
+        }
+
         if (currentState != null) {
             currentState.update(delta);
         } else {
