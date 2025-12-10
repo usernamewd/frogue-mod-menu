@@ -589,4 +589,13 @@ public class Octree {
         node.getClosestEntity(source, minPosTemp, maxPosTemp, f);
         return closestEntity;
     }
+
+    /**
+     * Get all entities in the octree.
+     * Used by cheat system for ESP and aimbot.
+     * @return Array of all entities
+     */
+    public Array<GameEntity> getAllEntities() {
+        return entities;
+    }
 }

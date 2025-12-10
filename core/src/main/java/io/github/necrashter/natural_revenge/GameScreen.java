@@ -33,6 +33,9 @@ import io.github.necrashter.natural_revenge.world.LowResWorldRenderer;
 import io.github.necrashter.natural_revenge.world.levels.ScriptedEvent;
 import io.github.necrashter.natural_revenge.world.player.PlayerWeapon;
 import io.github.necrashter.natural_revenge.world.player.Firearm;
+import io.github.necrashter.natural_revenge.cheats.CheatManager;
+import io.github.necrashter.natural_revenge.cheats.CheatMenu;
+import io.github.necrashter.natural_revenge.cheats.CheatEffects;
 
 public class GameScreen implements Screen {
     public static final float CROSSHAIR_SIZE = 48f;
@@ -42,6 +45,11 @@ public class GameScreen implements Screen {
     private final GameWorldRenderer worldRenderer;
 
     private final Stage stage;
+
+    // Cheat system
+    private CheatManager cheatManager;
+    private CheatMenu cheatMenu;
+    private CheatEffects cheatEffects;
 
     private final WidgetGroup hudGroup;
     private final Label topLeftLabel;
@@ -318,6 +326,11 @@ public class GameScreen implements Screen {
         }
         setPaused(false);
 
+        // Initialize cheat system
+        cheatManager = CheatManager.getInstance();
+        cheatMenu = new CheatMenu(stage);
+        cheatEffects = CheatEffects.getInstance();
+
         world.addedToScreen();
     }
 
@@ -376,10 +389,18 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         // Input handling
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            if (currentDialog != null) {
+            if (cheatMenu != null && cheatMenu.isOpen()) {
+                cheatMenu.toggleMenu();
+            } else if (currentDialog != null) {
                 currentDialog.hide();
             } else {
                 togglePause();
+            }
+        }
+        // Toggle cheat menu with INSERT or F12 key
+        if (Gdx.input.isKeyJustPressed(Input.Keys.INSERT) || Gdx.input.isKeyJustPressed(Input.Keys.F12)) {
+            if (cheatMenu != null) {
+                cheatMenu.toggleMenu();
             }
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.TAB)) {
@@ -389,7 +410,7 @@ public class GameScreen implements Screen {
                 showWeaponInventoryDialog();
             }
         }
-        if (!world.player.inputAdapter.disabled) {
+        if (!world.player.inputAdapter.disabled && (cheatMenu == null || !cheatMenu.isOpen())) {
             getPlayerMovement(world.player.movementInput);
         } else {
             world.player.movementInput.setZero();
@@ -406,6 +427,11 @@ public class GameScreen implements Screen {
             }
         }
 
+        // Apply cheat time scale (slow motion / hyper speed)
+        if (cheatManager != null) {
+            delta *= cheatManager.getTimeScale();
+        }
+
         // Update
         if (currentDialog != null && currentDialog.getStage() == null) {
             currentDialog = null;
@@ -417,6 +443,17 @@ public class GameScreen implements Screen {
                 }
             }
         }
+
+        // Update cheat system
+        if (cheatManager != null) {
+            cheatManager.update(delta, world);
+        }
+        if (cheatEffects != null) {
+            cheatEffects.update(delta);
+            cheatEffects.applyViewDistance(world);
+            cheatEffects.applyEnvironmentEffects(world);
+        }
+
         world.update(delta);
 
         bottomLabel.setText(world.player.getHoverInfo());
@@ -428,7 +465,22 @@ public class GameScreen implements Screen {
 //        ScreenUtils.clear((float)b, (float)b, (float)b, 1);
 //        ScreenUtils.clear(1, 0, 0, 1, true);
 
+        // Begin post-processing if enabled
+        if (cheatEffects != null) {
+            cheatEffects.beginPostProcess();
+        }
+
         worldRenderer.render();
+
+        // End post-processing
+        if (cheatEffects != null) {
+            cheatEffects.endPostProcess();
+        }
+
+        // Render ESP overlay
+        if (cheatManager != null) {
+            cheatManager.renderESP(world);
+        }
 
         stage.getViewport().apply();
         stage.draw();
@@ -461,6 +513,9 @@ public class GameScreen implements Screen {
     public void resize(int width, int height) {
         worldRenderer.screenResize(width, height);
         stage.getViewport().update(width, height, true);
+        if (cheatMenu != null) {
+            cheatMenu.updateButtonPosition();
+        }
     }
 
     public void togglePause() {
@@ -518,6 +573,16 @@ public class GameScreen implements Screen {
         // World renderer is supposed to dispose world as well.
         worldRenderer.dispose();
         stage.dispose();
+        // Dispose cheat system
+        if (cheatMenu != null) {
+            cheatMenu.dispose();
+        }
+        if (cheatManager != null) {
+            cheatManager.dispose();
+        }
+        if (cheatEffects != null) {
+            cheatEffects.dispose();
+        }
     }
 
     public void playerDied() {
