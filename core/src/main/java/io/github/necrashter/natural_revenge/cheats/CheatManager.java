@@ -197,11 +197,14 @@ public class CheatManager {
                 Vector3 toTarget = new Vector3(targetPos).sub(world.cam.position).nor();
 
                 float lerpFactor = Math.min(1f, aimbotSmoothing * Gdx.graphics.getDeltaTime());
-                world.cam.direction.lerp(toTarget, lerpFactor);
 
-                // Update player pitch
-                float pitch = (float) Math.toDegrees(Math.asin(toTarget.y));
-                world.player.pitch = MathUtils.lerp(world.player.pitch, -pitch, lerpFactor);
+                // Update player forward direction (horizontal)
+                Vector3 horizontalDir = new Vector3(toTarget.x, 0, toTarget.z).nor();
+                world.player.forward.lerp(horizontalDir, lerpFactor);
+
+                // Update player pitch (vertical angle)
+                float targetPitch = (float) Math.toDegrees(Math.asin(MathUtils.clamp(toTarget.y, -1f, 1f)));
+                world.player.pitch = MathUtils.lerp(world.player.pitch, MathUtils.clamp(targetPitch, -90f, 90f), lerpFactor);
             }
         }
     }

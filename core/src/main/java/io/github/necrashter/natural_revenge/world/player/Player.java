@@ -266,7 +266,20 @@ public class Player extends GameEntity {
         tmpV1.set(forward).crs(Vector3.Y);
         camera.rotate(tmpV1.nor(), pitch);
 
-        movement.set(movementInput.x * forward.x + movementInput.y * tmpV1.x, 0, movementInput.x * forward.z + movementInput.y * tmpV1.z);
+        CheatManager cheats = CheatManager.getInstance();
+
+        // Calculate movement direction
+        if (cheats.noClip) {
+            // No clip: fly in camera direction, including vertical
+            movement.set(
+                movementInput.x * camera.direction.x + movementInput.y * tmpV1.x,
+                movementInput.x * camera.direction.y,
+                movementInput.x * camera.direction.z + movementInput.y * tmpV1.z
+            );
+        } else {
+            // Normal: horizontal movement only
+            movement.set(movementInput.x * forward.x + movementInput.y * tmpV1.x, 0, movementInput.x * forward.z + movementInput.y * tmpV1.z);
+        }
         if (movement.len2() > 1) movement.nor();
         movement.scl(activeWeapon != null ? (movementSpeed * activeWeapon.speedMod) : (movementSpeed*1.75f));
 
@@ -275,8 +288,7 @@ public class Player extends GameEntity {
         camera.position.set(hitBox.position);
         camera.position.add(0, CAMERA_HEIGHT, 0);
 
-        // Cheat: Camera effects
-        CheatManager cheats = CheatManager.getInstance();
+        // Cheat: Camera effects (cheats already retrieved above)
         if (cheats.earthquakeMode) {
             // Earthquake camera shake
             float shakeIntensity = 0.15f;

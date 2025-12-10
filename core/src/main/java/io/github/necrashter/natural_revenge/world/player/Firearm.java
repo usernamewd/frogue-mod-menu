@@ -13,6 +13,7 @@ import io.github.necrashter.natural_revenge.Main;
 import io.github.necrashter.natural_revenge.world.Damageable;
 import io.github.necrashter.natural_revenge.world.GameWorld;
 import io.github.necrashter.natural_revenge.world.geom.Shape;
+import io.github.necrashter.natural_revenge.world.entities.GameEntity;
 import io.github.necrashter.natural_revenge.cheats.CheatManager;
 
 public class Firearm extends PlayerWeapon {
@@ -204,6 +205,35 @@ public class Firearm extends PlayerWeapon {
                 player.shootIntersection.entity.takeDamage(actualDamage, Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
                 totalBulletsHit++;
                 totalDamage += actualDamage;
+
+                // Cheat: Explosive shots - knockback nearby enemies
+                if (cheats.explosiveShots) {
+                    Vector3 hitPos = player.getShootTargetPoint();
+                    Array<GameEntity> entities = player.world.octree.getAllEntities();
+                    for (GameEntity entity : entities) {
+                        if (entity == player || entity.dead) continue;
+                        float dist = entity.hitBox.position.dst(hitPos);
+                        if (dist < 5f) {
+                            // Apply knockback and damage based on distance
+                            float force = (5f - dist) * 3f;
+                            Vector3 knockDir = new Vector3(entity.hitBox.position).sub(hitPos).nor();
+                            entity.hitBox.velocity.add(knockDir.x * force, force * 2f, knockDir.z * force);
+                            entity.takeDamage(actualDamage * (1f - dist / 5f), Damageable.DamageAgent.Player, Damageable.DamageSource.Firearm);
+                        }
+                    }
+                }
+
+                // Cheat: Freeze ray - freeze hit enemy
+                if (cheats.freezeRay && player.shootIntersection.entity != null) {
+                    player.shootIntersection.entity.hitBox.velocity.setZero();
+                    player.shootIntersection.entity.movement.setZero();
+                }
+
+                // Cheat: Gravity gun - pull/push entity
+                if (cheats.gravityGun && player.shootIntersection.entity != null) {
+                    Vector3 dir = new Vector3(player.shootRay.direction).scl(-15f);
+                    player.shootIntersection.entity.hitBox.velocity.add(dir);
+                }
             }
         }
         totalBulletsShot += bulletsPerShot;

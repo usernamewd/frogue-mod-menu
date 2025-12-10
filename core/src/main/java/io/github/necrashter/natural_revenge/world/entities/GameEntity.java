@@ -70,6 +70,7 @@ public class GameEntity implements Damageable, Spatial {
 
     public void update(float delta) {
         CheatManager cheats = CheatManager.getInstance();
+        boolean isPlayer = this instanceof io.github.necrashter.natural_revenge.world.player.Player;
 
         hitBox.position.mulAdd(movement, delta);
 
@@ -77,20 +78,20 @@ public class GameEntity implements Damageable, Spatial {
             hitBox.velocity.scl(.9f, 1, .9f);
 
         // Apply moon gravity compensation for player only
-        // Normal gravity is applied in hitBox.update(), we counteract some of it here
-        if (cheats.moonGravity && this instanceof io.github.necrashter.natural_revenge.world.player.Player) {
+        if (cheats.moonGravity && isPlayer) {
             // Counteract 80% of gravity (making it feel like moon gravity)
             hitBox.velocity.y += delta * CharHitBox.GRAVITY * 0.8f;
         }
 
-        hitBox.update(delta);
-
-        // No clip mode - skip collisions for player
-        if (cheats.noClip && this instanceof io.github.necrashter.natural_revenge.world.player.Player) {
-            // In no clip mode, allow free movement without collision
-            hitBox.onGround = true; // Fake being on ground to allow jumping
-            // Don't clamp to terrain, don't do collision checks
+        // No clip mode - completely skip physics and collisions for player
+        if (cheats.noClip && isPlayer) {
+            // In no clip mode: no gravity, no collisions
+            // Don't call hitBox.update() which applies gravity
+            hitBox.onGround = true; // Always allow jumping
+            hitBox.velocity.y = 0; // No vertical velocity from gravity
+            // Skip all collision checks
         } else {
+            hitBox.update(delta);
             staticCollisions();
         }
 
